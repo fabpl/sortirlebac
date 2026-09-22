@@ -10,7 +10,7 @@
  * rafraîchissement.
  */
 
-import type { Collecte } from "./types.ts";
+import type { Collecte } from "./types.js";
 
 const DOMAINE = "sortirlebac";
 const PRODID = "-//sortirlebac//Collecte des déchets La Rochelle//FR";

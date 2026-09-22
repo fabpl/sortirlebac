@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { GET } from "../api/calendrier.ts";
+import { GET } from "../api/calendrier.js";
 
 const appeler = (requete: string) =>
   GET(new Request(`https://sortirlebac.vercel.app/calendrier.ics?${requete}`));

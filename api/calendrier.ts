@@ -10,10 +10,10 @@
  * disponibilité du portail au moment où un agenda se rafraîchit.
  */
 
-import { genererIcs, RAPPEL_PAR_DEFAUT } from "../lib/ics.ts";
-import { collectes } from "../lib/moteur.ts";
-import { ajouterJours, aujourdhuiAParis } from "../lib/temps.ts";
-import type { Paquet } from "../lib/types.ts";
+import { genererIcs, RAPPEL_PAR_DEFAUT } from "../lib/ics.js";
+import { collectes } from "../lib/moteur.js";
+import { ajouterJours, aujourdhuiAParis } from "../lib/temps.js";
+import type { Paquet } from "../lib/types.js";
 
 /**
  * Le paquet est chargé à la première requête, puis gardé en mémoire pour la

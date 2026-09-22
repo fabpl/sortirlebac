@@ -80,13 +80,17 @@ fenêtre publiée par l'Agglo à partir des seules règles de secteur :
 Une action hebdomadaire rejoue les deux et n'intègre les nouvelles données que
 si elles passent ; sinon elle ouvre une issue.
 
-**Et la fonction se charge vraiment.** Vitest transforme les imports, donc un
-module parfaitement vert en test peut exploser en production : le premier
-déploiement est tombé en `FUNCTION_INVOCATION_FAILED` avec 23 tests au vert,
-sur un import JSON auquel il manquait `with { type: "json" }`, puis sur des
-imports relatifs sans extension. `npm run smoke` charge la fonction sous le
-vrai Node, en ESM, et l'invoque — c'est le seul contrôle qui voit cette
-classe de bug.
+**Et la fonction se charge vraiment.** Vite et Vitest résolvent les imports
+eux-mêmes ; la plateforme, non. Elle transpile chaque `.ts` en `.js` voisin
+sans bundler, puis laisse Node résoudre — ce qui impose deux contraintes
+invisibles en test : les spécificateurs relatifs s'écrivent en `.js`
+(convention TypeScript ESM, `./ics.js` désigne `ics.ts`), et un import JSON
+exige `with { type: "json" }` puisque le paquet est en `"type": "module"`.
+
+Le premier déploiement est tombé en `FUNCTION_INVOCATION_FAILED` avec 25
+tests au vert. `npm run smoke` reproduit la chaîne réelle — transpilation
+sans bundle via esbuild, puis import sous Node — et échoue si l'une ou
+l'autre contrainte est violée.
 
 ## Développer
 

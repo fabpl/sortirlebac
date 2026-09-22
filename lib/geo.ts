@@ -1,4 +1,4 @@
-import type { Emprises } from "./types.ts";
+import type { Emprises } from "./types.js";
 
 /**
  * Lancer de rayon horizontal (règle pair-impair).

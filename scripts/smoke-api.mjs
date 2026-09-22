@@ -1,56 +1,94 @@
 /**
- * Charge et invoque la fonction serverless sous le vrai Node, en ESM.
+ * Charge et invoque la fonction serverless comme le fait la plateforme.
  *
- * Les tests Vitest ne peuvent pas attraper cette classe de bug : Vitest
- * transforme les imports, donc un `import` de JSON sans attribut y passe alors
- * qu'il fait exploser la fonction en production. C'est exactement ce qui est
- * arrivé au premier déploiement — 23 tests au vert, et un
- * FUNCTION_INVOCATION_FAILED à la première requête.
+ * Vercel ne bundle pas les fonctions : il transpile chaque `.ts` en `.js`
+ * voisin, puis laisse Node résoudre les imports. Les spécificateurs relatifs
+ * doivent donc s'écrire en `.js` — convention TypeScript ESM — et un import
+ * JSON exige `with { type: "json" }`, le paquet étant en `"type": "module"`.
  *
- * Node 22.18+ / 24 exécutent le TypeScript directement (effacement de types).
+ * Ni Vitest ni Vite ne voient ces contraintes : ils résolvent les imports
+ * eux-mêmes. Le premier déploiement est tombé en FUNCTION_INVOCATION_FAILED
+ * avec 25 tests au vert. Ce script reproduit la chaîne réelle : transpilation
+ * sans bundle dans un dossier temporaire, puis import sous Node.
  */
 
+import { cpSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { glob } from "node:fs/promises";
+
+import * as esbuild from "esbuild";
 
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), "..");
+const SORTIE = mkdtempSync(join(tmpdir(), "sortirlebac-smoke-"));
 
-const cas = [
-  { nom: "point couvert", requete: "lat=46.16295&lon=-1.15359", attendu: 200,
-    type: "text/calendar" },
+const CAS = [
+  { nom: "point couvert", requete: "lat=46.16295&lon=-1.15359",
+    attendu: 200, type: "text/calendar" },
   { nom: "sans coordonnées", requete: "", attendu: 400 },
   { nom: "hors territoire", requete: "lat=48.8566&lon=2.3522", attendu: 404 },
 ];
 
-const { GET } = await import(join(RACINE, "api", "calendrier.ts"));
+try {
+  const sources = [];
+  for (const dossier of ["api", "lib"]) {
+    for await (const fichier of glob(`${dossier}/**/*.ts`, { cwd: RACINE })) {
+      sources.push(join(RACINE, fichier));
+    }
+  }
 
-let echecs = 0;
-for (const { nom, requete, attendu, type } of cas) {
-  const reponse = await GET(new Request(`https://exemple.test/calendrier.ics?${requete}`));
-  const ok = reponse.status === attendu &&
-    (!type || (reponse.headers.get("Content-Type") ?? "").includes(type));
+  await esbuild.build({
+    entryPoints: sources,
+    outdir: SORTIE,
+    outbase: RACINE,
+    bundle: false,          // comme Vercel : transpilation seule
+    format: "esm",
+    platform: "node",
+    target: "node22",
+  });
 
-  if (ok) {
-    console.log(`  ✓ ${nom} → ${reponse.status}`);
+  // Le JSON n'est pas transpilé : la plateforme le trace et le recopie.
+  mkdirSync(join(SORTIE, "public"), { recursive: true });
+  cpSync(join(RACINE, "public", "secteurs.json"),
+         join(SORTIE, "public", "secteurs.json"));
+
+  const { GET } = await import(
+    pathToFileURL(join(SORTIE, "api", "calendrier.js")).href);
+
+  let echecs = 0;
+  for (const { nom, requete, attendu, type } of CAS) {
+    const reponse = await GET(
+      new Request(`https://exemple.test/calendrier.ics?${requete}`));
+    const ok = reponse.status === attendu &&
+      (!type || (reponse.headers.get("Content-Type") ?? "").includes(type));
+
+    if (ok) {
+      console.log(`  ✓ ${nom} → ${reponse.status}`);
+    } else {
+      echecs++;
+      console.error(`  ✗ ${nom} → ${reponse.status} ` +
+                    `(attendu ${attendu}${type ? `, ${type}` : ""})`);
+    }
+  }
+
+  const corps = await (await GET(
+    new Request("https://exemple.test/calendrier.ics?lat=46.16295&lon=-1.15359"))
+  ).text();
+  const evenements = corps.split("BEGIN:VEVENT").length - 1;
+
+  if (corps.startsWith("BEGIN:VCALENDAR") && evenements > 50) {
+    console.log(`  ✓ flux iCalendar complet (${evenements} événements)`);
   } else {
     echecs++;
-    console.error(`  ✗ ${nom} → ${reponse.status} ` +
-                  `(attendu ${attendu}${type ? `, ${type}` : ""})`);
+    console.error(`  ✗ flux inattendu (${evenements} événements)`);
   }
-}
 
-const corps = await (await GET(
-  new Request("https://exemple.test/calendrier.ics?lat=46.16295&lon=-1.15359"),
-)).text();
-if (corps.startsWith("BEGIN:VCALENDAR") && corps.includes("BEGIN:VEVENT")) {
-  console.log(`  ✓ flux iCalendar servi (${corps.split("BEGIN:VEVENT").length - 1} événements)`);
-} else {
-  echecs++;
-  console.error("  ✗ le corps n'est pas un calendrier");
+  if (echecs > 0) {
+    console.error(`\n✗ ${echecs} échec(s) dans les conditions de la plateforme`);
+    process.exit(1);
+  }
+  console.log("\nLa fonction se charge et répond, transpilée sans bundle.");
+} finally {
+  rmSync(SORTIE, { recursive: true, force: true });
 }
-
-if (echecs > 0) {
-  console.error(`\n✗ ${echecs} échec(s) sous Node`);
-  process.exit(1);
-}
-console.log("\nLa fonction se charge et répond sous Node.");

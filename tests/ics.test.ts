@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import donnees from "../public/secteurs.json";
-import { genererIcs } from "../lib/ics.ts";
-import { collectes } from "../lib/moteur.ts";
-import type { Paquet } from "../lib/types.ts";
+import { genererIcs } from "../lib/ics.js";
+import { collectes } from "../lib/moteur.js";
+import type { Paquet } from "../lib/types.js";
 
 const paquet = donnees as unknown as Paquet;
 

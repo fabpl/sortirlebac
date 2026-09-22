@@ -3,6 +3,10 @@
  *
  * Elle vit dans `api/calendrier.ts` et Vercel l'expose sur `/api/calendrier` ;
  * `vercel.json` la réécrit sur `/calendrier.ics`, l'URL que voient les agendas.
+ *
+ * Ces tests ne suffisent pas : Vitest transforme les imports, donc ils restent
+ * verts même quand la fonction refuse de se charger sous Node. C'est le rôle
+ * de `npm run smoke`.
  */
 
 import { describe, expect, it } from "vitest";
@@ -12,9 +16,14 @@ import { GET } from "../api/calendrier.ts";
 const appeler = (requete: string) =>
   GET(new Request(`https://sortirlebac.vercel.app/calendrier.ics?${requete}`));
 
+const corpsDe = async (requete: string) => (await appeler(requete)).text();
+
+const COUVERT = "lat=46.16295&lon=-1.15359";
+const evenements = (texte: string) => texte.split("BEGIN:VEVENT").length - 1;
+
 describe("GET /calendrier.ics", () => {
   it("sert un calendrier pour un point couvert", async () => {
-    const reponse = appeler("lat=46.16295&lon=-1.15359");
+    const reponse = await appeler(COUVERT);
     expect(reponse.status).toBe(200);
     expect(reponse.headers.get("Content-Type")).toContain("text/calendar");
 
@@ -25,48 +34,43 @@ describe("GET /calendrier.ics", () => {
   });
 
   it("refuse une requête sans coordonnées", async () => {
-    expect(appeler("").status).toBe(400);
-    expect(appeler("lat=46.1").status).toBe(400);
-    expect(appeler("lat=abc&lon=def").status).toBe(400);
+    expect((await appeler("")).status).toBe(400);
+    expect((await appeler("lat=46.1")).status).toBe(400);
+    expect((await appeler("lat=abc&lon=def")).status).toBe(400);
   });
 
-  it("répond 404 hors du territoire de l'Agglo", () => {
-    expect(appeler("lat=48.8566&lon=2.3522").status).toBe(404); // Paris
+  it("répond 404 hors du territoire de l'Agglo", async () => {
+    expect((await appeler("lat=48.8566&lon=2.3522")).status).toBe(404); // Paris
   });
 
   it("applique l'horizon complet quand `jours` est absent", async () => {
     // L'URL d'abonnement produite par l'application ne passe ni `jours` ni
     // `rappel` : ces deux défauts sont le cas nominal, pas un cas limite.
-    const defaut = await appeler("lat=46.16295&lon=-1.15359").text();
-    const explicite = await appeler("lat=46.16295&lon=-1.15359&jours=400").text();
-    const evenements = (texte: string) => texte.split("BEGIN:VEVENT").length - 1;
+    const defaut = evenements(await corpsDe(COUVERT));
+    const explicite = evenements(await corpsDe(`${COUVERT}&jours=400`));
 
-    expect(evenements(defaut)).toBe(evenements(explicite));
-    expect(evenements(defaut)).toBeGreaterThan(50);
+    expect(defaut).toBe(explicite);
+    expect(defaut).toBeGreaterThan(50);
   });
 
   it("pose un rappel par défaut quand `rappel` est absent", async () => {
-    expect(await appeler("lat=46.16295&lon=-1.15359").text())
-      .toContain("BEGIN:VALARM");
+    expect(await corpsDe(COUVERT)).toContain("BEGIN:VALARM");
   });
 
   it("borne l'horizon demandé", async () => {
-    const court = await appeler("lat=46.16295&lon=-1.15359&jours=7").text();
-    const long = await appeler("lat=46.16295&lon=-1.15359&jours=9999").text();
-    const evenements = (texte: string) => texte.split("BEGIN:VEVENT").length - 1;
-    expect(evenements(court)).toBeLessThan(evenements(long));
-    expect(evenements(court)).toBeGreaterThan(0);
+    const court = evenements(await corpsDe(`${COUVERT}&jours=7`));
+    const long = evenements(await corpsDe(`${COUVERT}&jours=9999`));
+
+    expect(court).toBeGreaterThan(0);
+    expect(court).toBeLessThan(long);
   });
 
   it("honore le paramètre de rappel", async () => {
-    expect(await appeler("lat=46.16295&lon=-1.15359&rappel=3").text())
-      .toContain("TRIGGER:-PT3H");
-    expect(await appeler("lat=46.16295&lon=-1.15359&rappel=0").text())
-      .not.toContain("BEGIN:VALARM");
+    expect(await corpsDe(`${COUVERT}&rappel=3`)).toContain("TRIGGER:-PT3H");
+    expect(await corpsDe(`${COUVERT}&rappel=0`)).not.toContain("BEGIN:VALARM");
   });
 
   it("reprend le nom de calendrier fourni", async () => {
-    expect(await appeler("lat=46.16295&lon=-1.15359&nom=Chez+moi").text())
-      .toContain("X-WR-CALNAME:Chez moi");
+    expect(await corpsDe(`${COUVERT}&nom=Chez+moi`)).toContain("X-WR-CALNAME:Chez moi");
   });
 });

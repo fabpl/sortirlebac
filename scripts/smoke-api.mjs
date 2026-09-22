@@ -26,7 +26,7 @@ const { GET } = await import(join(RACINE, "api", "calendrier.ts"));
 
 let echecs = 0;
 for (const { nom, requete, attendu, type } of cas) {
-  const reponse = GET(new Request(`https://exemple.test/calendrier.ics?${requete}`));
+  const reponse = await GET(new Request(`https://exemple.test/calendrier.ics?${requete}`));
   const ok = reponse.status === attendu &&
     (!type || (reponse.headers.get("Content-Type") ?? "").includes(type));
 
@@ -39,9 +39,9 @@ for (const { nom, requete, attendu, type } of cas) {
   }
 }
 
-const corps = await GET(
+const corps = await (await GET(
   new Request("https://exemple.test/calendrier.ics?lat=46.16295&lon=-1.15359"),
-).text();
+)).text();
 if (corps.startsWith("BEGIN:VCALENDAR") && corps.includes("BEGIN:VEVENT")) {
   console.log(`  ✓ flux iCalendar servi (${corps.split("BEGIN:VEVENT").length - 1} événements)`);
 } else {

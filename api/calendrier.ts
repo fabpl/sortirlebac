@@ -5,23 +5,37 @@
  * d'une URL stable qui renvoie du `text/calendar`, ce qu'un fichier statique
  * ne peut pas faire par adresse. D'où cette unique fonction.
  *
- * Les données de secteurs sont importées à la construction : aucun appel au
+ * Les données de secteurs sont figées dans le déploiement : aucun appel au
  * portail à l'exécution, donc une réponse rapide et pas de dépendance à la
  * disponibilité du portail au moment où un agenda se rafraîchit.
  */
 
-// L'attribut `with { type: "json" }` n'est pas décoratif : le paquet est en
-// `"type": "module"`, donc Node exécute cette fonction en ESM et refuse un
-// import JSON sans lui (ERR_IMPORT_ATTRIBUTE_MISSING). Vitest transforme les
-// imports et ne voit pas la différence — d'où scripts/smoke-api.mjs, qui
-// charge la fonction sous le vrai Node.
-import paquetBrut from "../public/secteurs.json" with { type: "json" };
 import { genererIcs, RAPPEL_PAR_DEFAUT } from "../lib/ics.ts";
 import { collectes } from "../lib/moteur.ts";
 import { ajouterJours, aujourdhuiAParis } from "../lib/temps.ts";
 import type { Paquet } from "../lib/types.ts";
 
-const paquet = paquetBrut as unknown as Paquet;
+/**
+ * Le paquet est chargé à la première requête, puis gardé en mémoire pour la
+ * durée de vie de l'instance.
+ *
+ * Import dynamique plutôt que statique, pour une raison précise : si le
+ * chargement échoue — fichier non embarqué par le bundler, attribut d'import
+ * refusé par le runtime — un import statique fait planter le module avant que
+ * le gestionnaire n'existe, et la plateforme ne sait répondre qu'un
+ * FUNCTION_INVOCATION_FAILED opaque. Ici l'échec est rattrapé et renvoyé en
+ * clair, ce qui rend le problème diagnosticable depuis une simple requête.
+ *
+ * L'attribut `with { type: "json" }` est obligatoire : le paquet est en
+ * `"type": "module"`, donc Node refuse un import JSON sans lui.
+ */
+let chargement: Promise<Paquet> | null = null;
+
+function chargerPaquet(): Promise<Paquet> {
+  chargement ??= import("../public/secteurs.json", { with: { type: "json" } })
+    .then((module) => module.default as unknown as Paquet);
+  return chargement;
+}
 
 const HORIZON_MAX = 400;
 // Un agenda se resynchronise typiquement toutes les quelques heures. Une heure
@@ -52,7 +66,18 @@ function coordonnee(valeur: string | null, amplitude: number): number | null {
   return lu;
 }
 
-export function GET(requete: Request): Response {
+export async function GET(requete: Request): Promise<Response> {
+  let paquet: Paquet;
+  try {
+    paquet = await chargerPaquet();
+  } catch (cause) {
+    chargement = null;  // ne pas figer l'échec sur toute la vie de l'instance
+    return Response.json(
+      { erreur: "données de secteurs indisponibles",
+        detail: cause instanceof Error ? cause.message : String(cause) },
+      { status: 503 });
+  }
+
   const parametres = new URL(requete.url).searchParams;
   const lat = coordonnee(parametres.get("lat"), 90);
   const lon = coordonnee(parametres.get("lon"), 180);

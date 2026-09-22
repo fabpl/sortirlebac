@@ -23,13 +23,15 @@ export async function GET(): Promise<Response> {
   await essayer("import .ts", async () =>
     typeof (await import("../lib/temps.ts")).aujourdhuiAParis);
 
+  // Spécificateurs construits à l'exécution : TypeScript ne les résout pas,
+  // ce qui est justement le but — on veut savoir ce que le runtime accepte.
+  const dynamique = (chemin: string) => import(/* @vite-ignore */ chemin);
+
   await essayer("import .js", async () =>
-    // @ts-expect-error : chemin volontairement faux en TS, on teste le runtime
-    typeof (await import("../lib/temps.js")).aujourdhuiAParis);
+    typeof (await dynamique("../lib/temps.js")).aujourdhuiAParis);
 
   await essayer("import sans extension", async () =>
-    // @ts-expect-error : idem
-    typeof (await import("../lib/temps")).aujourdhuiAParis);
+    typeof (await dynamique("../lib/temps")).aujourdhuiAParis);
 
   await essayer("json avec attribut", async () => {
     const module = await import("../public/secteurs.json", { with: { type: "json" } });

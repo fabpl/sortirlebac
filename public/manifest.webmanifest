@@ -1,0 +1,13 @@
+{
+  "name": "Sortir le bac — Agglo de La Rochelle",
+  "short_name": "Sortir le bac",
+  "description": "Calendrier de collecte des déchets des 28 communes de l'Agglomération de La Rochelle.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f7f5",
+  "theme_color": "#2f6b4f",
+  "lang": "fr",
+  "icons": [
+    { "src": "/icone.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

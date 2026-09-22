@@ -1,0 +1,207 @@
+:root {
+  --fond: #f6f7f5;
+  --carte: #ffffff;
+  --texte: #1c211d;
+  --doux: #5a675e;
+  --trait: #dde3dd;
+  --accent: #2f6b4f;
+  --accent-doux: #e8f1ec;
+  --om: #55606a;
+  --tri: #9a7400;
+  --alerte: #a33a2a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fond: #12140f;
+    --carte: #1b1e19;
+    --texte: #eef1ec;
+    --doux: #9aa79f;
+    --trait: #2e332d;
+    --accent: #7fc4a0;
+    --accent-doux: #1f2a24;
+    --om: #a8b2ab;
+    --tri: #e5b93c;
+    --alerte: #e9836f;
+  }
+}
+
+:root[data-theme="dark"] {
+  --fond: #12140f;
+  --carte: #1b1e19;
+  --texte: #eef1ec;
+  --doux: #9aa79f;
+  --trait: #2e332d;
+  --accent: #7fc4a0;
+  --accent-doux: #1f2a24;
+  --om: #a8b2ab;
+  --tri: #e5b93c;
+  --alerte: #e9836f;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--texte);
+  font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 2.5rem 1rem 4rem;
+}
+
+h1 {
+  font-size: 1.6rem;
+  letter-spacing: -0.015em;
+  margin: 0 0 0.35rem;
+}
+
+.sous { color: var(--doux); margin: 0 0 2rem; font-size: 0.95rem; }
+
+.champ { position: relative; }
+
+.etiquette {
+  display: block;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--doux);
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+input[type="search"] {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font: inherit;
+  color: var(--texte);
+  background: var(--carte);
+  border: 1px solid var(--trait);
+  border-radius: 0.6rem;
+}
+
+input[type="search"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.suggestions {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  right: 0;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+  background: var(--carte);
+  border: 1px solid var(--trait);
+  border-radius: 0.6rem;
+  overflow: hidden;
+  box-shadow: 0 10px 28px rgb(0 0 0 / 10%);
+}
+
+.suggestions li {
+  padding: 0.6rem 0.9rem;
+  cursor: pointer;
+  font-size: 0.93rem;
+}
+
+.suggestions li[aria-selected="true"] { background: var(--accent-doux); }
+
+.bloc {
+  background: var(--carte);
+  border: 1px solid var(--trait);
+  border-radius: 0.75rem;
+  padding: 1.15rem 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.bloc h2 {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--doux);
+  font-weight: 600;
+  margin: 0 0 0.85rem;
+}
+
+.collectes { list-style: none; margin: 0; padding: 0; }
+
+.collectes li {
+  display: flex;
+  gap: 0.9rem;
+  align-items: baseline;
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--trait);
+}
+
+.collectes li:first-child { border-top: 0; }
+
+.quand {
+  min-width: 9.5rem;
+  font-size: 0.93rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.quoi { font-weight: 500; }
+.quoi.om { color: var(--om); }
+.quoi.tri { color: var(--tri); }
+
+.ferie {
+  display: block;
+  font-size: 0.8rem;
+  font-style: normal;
+  color: var(--alerte);
+}
+
+.horaire {
+  margin-left: auto;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  color: var(--doux);
+  font-variant-numeric: tabular-nums;
+}
+
+.actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.15rem; }
+
+.bouton {
+  display: inline-block;
+  padding: 0.62rem 1.05rem;
+  border: 1px solid var(--accent);
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: var(--fond);
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.bouton.creux { background: transparent; color: var(--accent); }
+
+.aparte { color: var(--doux); font-size: 0.82rem; margin: 0.9rem 0 0; }
+.vide, .attente { color: var(--doux); }
+.attente { margin-top: 1.5rem; }
+.erreur { color: var(--alerte); font-size: 0.88rem; }
+
+footer {
+  margin-top: 2.5rem;
+  color: var(--doux);
+  font-size: 0.82rem;
+  border-top: 1px solid var(--trait);
+  padding-top: 1.2rem;
+}
+
+footer p { margin: 0 0 0.5rem; }
+footer a { color: inherit; }
+
+@media (max-width: 30rem) {
+  .page { padding: 1.75rem 1rem 3rem; }
+  .collectes li { flex-wrap: wrap; gap: 0.15rem 0.7rem; }
+  .quand { min-width: 0; flex: 1 1 auto; order: 1; }
+  .horaire { order: 2; margin-left: 0; flex: 0 0 auto; }
+  .quoi { order: 3; flex: 1 0 100%; }
+}

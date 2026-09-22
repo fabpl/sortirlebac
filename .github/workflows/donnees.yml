@@ -1,0 +1,84 @@
+name: Rafraîchir les données
+
+# Le portail publie une nouvelle version des secteurs chaque semaine. On la
+# reprend, on la valide, et on ne pousse que si elle est valide : un commit
+# automatique de données fausses serait pire que des données un peu vieilles.
+on:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: donnees
+  cancel-in-progress: false
+
+jobs:
+  rafraichir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Échoue si une seule des 23 979 adresses de la base adresse locale
+      # change de secteur après compactage.
+      - name: Reconstruire le paquet de secteurs
+        run: npm run donnees
+
+      # Échoue si le moteur ne reproduit plus les dates publiées par l'Agglo,
+      # c'est-à-dire si les règles de collecte ont changé de forme.
+      - name: Valider contre les dates publiées
+        run: npm run verifier
+
+      - name: Publier si les données ont bougé
+        id: publier
+        run: |
+          if git diff --quiet -- public/secteurs.json data/reference-dates.json; then
+            echo "change=non" >> "$GITHUB_OUTPUT"
+            echo "Aucun changement."
+          else
+            echo "change=oui" >> "$GITHUB_OUTPUT"
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add public/secteurs.json data/reference-dates.json
+            git commit -m "données : rafraîchissement depuis le portail open data"
+            git push
+          fi
+
+      - name: Signaler l'échec
+        if: failure()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const titre = "Rafraîchissement des données en échec";
+            const { data: ouvertes } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: "open", labels: "donnees",
+            });
+            if (ouvertes.some((issue) => issue.title === titre)) return;
+            await github.rest.issues.create({
+              owner: context.repo.owner, repo: context.repo.repo,
+              title: titre,
+              labels: ["donnees"],
+              body: [
+                "Le rafraîchissement hebdomadaire a échoué. Deux causes probables :",
+                "",
+                "- **le compactage déplace des adresses** — le portail a retracé des",
+                "  secteurs plus finement ; augmenter `DECIMALES` dans",
+                "  `scripts/build-data.mjs` ;",
+                "- **le moteur ne reproduit plus les dates publiées** — l'Agglo a changé",
+                "  la forme de ses règles ; lire l'écart affiché par les tests.",
+                "",
+                `[Voir l'exécution](${context.serverUrl}/${context.repo.owner}/` +
+                `${context.repo.repo}/actions/runs/${context.runId})`,
+              ].join("\n"),
+            });

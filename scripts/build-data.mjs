@@ -125,6 +125,22 @@ function empreinte(lon, lat, emprises) {
   return masque;
 }
 
+/**
+ * Horodatage du fichier existant si son contenu est identique au nouveau,
+ * `null` s'il a changé (ou s'il n'existe pas encore).
+ */
+function precedent(chemin, paquet) {
+  if (!existsSync(chemin)) return null;
+  try {
+    const ancien = JSON.parse(readFileSync(chemin, "utf8"));
+    const memeSubstance = ["emprises", "regles", "source", "licence"].every(
+      (cle) => JSON.stringify(ancien[cle]) === JSON.stringify(paquet[cle]));
+    return memeSubstance ? ancien.genere : null;
+  } catch {
+    return null;  // fichier illisible : on le réécrit
+  }
+}
+
 async function principal() {
   console.log("Téléchargement du portail…");
   const [lignes, dates, adresses] = await Promise.all([
@@ -167,7 +183,7 @@ async function principal() {
   }
 
   const paquet = {
-    genere: new Date().toISOString(),
+    genere: "",  // renseigné plus bas : date du dernier changement réel
     source: `${API}?dataset=${JEU_SECTEURS}`,
     licence: "Licence Ouverte — Ville et Communauté d'agglomération de La Rochelle",
     emprises,
@@ -191,13 +207,21 @@ async function principal() {
   // maintenir synchrone.
   mkdirSync(join(RACINE, "public"), { recursive: true });
   mkdirSync(join(RACINE, "data"), { recursive: true });
+  const destination = join(RACINE, "public", "secteurs.json");
+
+  // `genere` doit dater le dernier changement réel, pas la dernière exécution.
+  // Sinon le fichier diffère à chaque build et le rafraîchissement hebdomadaire
+  // commite du bruit toutes les semaines, même quand le portail n'a rien changé.
+  paquet.genere = precedent(destination, paquet) ?? new Date().toISOString();
+
   const json = JSON.stringify(paquet);
-  writeFileSync(join(RACINE, "public", "secteurs.json"), json);
+  writeFileSync(destination, json);
   writeFileSync(join(RACINE, "data", "reference-dates.json"), JSON.stringify(
     dates.map((d) => ({ s: Number(d.secteur_id), t: d.collecte_type, j: d.jour }))));
 
   const ko = (n) => `${(n / 1024).toFixed(0)} Ko`;
-  console.log(`\n  public/secteurs.json ${ko(json.length)} — ${ko(gzipSync(json).length)} gzip`);
+  console.log(`\n  public/secteurs.json ${ko(json.length)} — ` +
+              `${ko(gzipSync(json).length)} gzip · inchangé depuis ${paquet.genere}`);
 }
 
 principal().catch((erreur) => {

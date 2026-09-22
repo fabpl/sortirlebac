@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { Analytics } from "@vercel/analytics/react";
 
 import { Application } from "./Application.js";
 import "./styles.css";
@@ -7,6 +8,7 @@ import "./styles.css";
 createRoot(document.getElementById("racine")!).render(
   <StrictMode>
     <Application />
+    <Analytics />
   </StrictMode>,
 );
 

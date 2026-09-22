@@ -30,8 +30,13 @@ self.addEventListener("fetch", (evenement) => {
   if (requete.method !== "GET") return;
 
   const url = new URL(requete.url);
-  // L'API de calendrier et le géocodage ne doivent jamais être servis du cache.
-  if (url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
+  // Le flux d'abonnement et le géocodage ne passent jamais par le cache : un
+  // calendrier servi depuis le cache serait figé sur d'anciennes dates.
+  // `/calendrier.ics` est la réécriture publique de `/api/calendrier` — les
+  // deux chemins doivent être exclus.
+  const horsCache = url.pathname.startsWith("/api/") ||
+                    url.pathname === "/calendrier.ics";
+  if (url.origin !== self.location.origin || horsCache) return;
 
   evenement.respondWith(
     fetch(requete)

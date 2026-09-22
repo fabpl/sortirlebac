@@ -93,16 +93,23 @@ npm test
 |---|---|
 | `lib/` | moteur partagé — géométrie, règles, iCalendar, fuseau |
 | `src/` | interface React |
-| `api/calendrier.ics.ts` | fonction serverless du flux d'abonnement |
+| `api/calendrier.ts` | fonction serverless, exposée sur `/calendrier.ics` |
 | `scripts/build-data.mjs` | téléchargement, compactage, contrôle par adresses |
 | `tests/` | validation contre le portail, conformité RFC 5545, API |
 | `contrib/` | source Home Assistant (Python) |
 
 ## Déploiement
 
-Import du dépôt sur Vercel, sans configuration : `vercel.json` déclare le build
-Vite et la fonction `api/`. Rien à héberger d'autre, aucune base de données,
-aucune clé d'API — le portail et la BAN répondent tous les deux en anonyme.
+Import du dépôt sur Vercel, sans rien saisir : `vercel.json` déclare le
+framework, le build, le dossier de sortie et la réécriture du flux. Root
+directory, build settings et variables d'environnement restent vides — il n'y a
+aucune clé d'API à fournir, le portail et la BAN répondent tous les deux en
+anonyme.
+
+Le flux d'abonnement est servi sur `/calendrier.ics?lat=…&lon=…`, réécrit vers
+la fonction `api/calendrier`. Passer par une réécriture plutôt que par un nom
+de fichier à rallonge évite de dépendre de la façon dont la plateforme découpe
+les extensions, et donne une URL que les agendas acceptent sans broncher.
 
 ## Home Assistant
 

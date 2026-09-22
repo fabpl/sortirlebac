@@ -1,13 +1,18 @@
-/** La fonction serverless est testée comme une fonction pure Request → Response. */
+/**
+ * La fonction serverless est testée comme une fonction pure Request → Response.
+ *
+ * Elle vit dans `api/calendrier.ts` et Vercel l'expose sur `/api/calendrier` ;
+ * `vercel.json` la réécrit sur `/calendrier.ics`, l'URL que voient les agendas.
+ */
 
 import { describe, expect, it } from "vitest";
 
-import { GET } from "../api/calendrier.ics";
+import { GET } from "../api/calendrier";
 
 const appeler = (requete: string) =>
-  GET(new Request(`https://sortirlebac.vercel.app/api/calendrier.ics?${requete}`));
+  GET(new Request(`https://sortirlebac.vercel.app/calendrier.ics?${requete}`));
 
-describe("GET /api/calendrier.ics", () => {
+describe("GET /calendrier.ics", () => {
   it("sert un calendrier pour un point couvert", async () => {
     const reponse = appeler("lat=46.16295&lon=-1.15359");
     expect(reponse.status).toBe(200);

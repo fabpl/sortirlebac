@@ -25,7 +25,7 @@ export function Resultat({ adresse, collectes, couverture }: Props) {
     lon: adresse.lon.toFixed(6),
     nom: `Collecte — ${adresse.libelle}`,
   });
-  const urlIcs = `${location.origin}/api/calendrier.ics?${parametres}`;
+  const urlIcs = `${location.origin}/calendrier.ics?${parametres}`;
 
   const fichier = useMemo(() => {
     if (collectes.length === 0) return null;

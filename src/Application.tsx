@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 
-import { collectes as calculer, couvertureLocale } from "../lib/moteur";
-import { ajouterJours, aujourdhuiAParis } from "../lib/temps";
-import type { Collecte, Paquet } from "../lib/types";
-import { chargerPaquet } from "./donnees";
-import { RechercheAdresse } from "./RechercheAdresse";
-import { Resultat } from "./Resultat";
-import type { Adresse } from "./geocodage";
+import { collectes as calculer, couvertureLocale } from "../lib/moteur.ts";
+import { ajouterJours, aujourdhuiAParis } from "../lib/temps.ts";
+import type { Collecte, Paquet } from "../lib/types.ts";
+import { chargerPaquet } from "./donnees.ts";
+import { RechercheAdresse } from "./RechercheAdresse.tsx";
+import { Resultat } from "./Resultat.tsx";
+import type { Adresse } from "./geocodage.ts";
 
 const HORIZON_JOURS = 400;
 const MEMOIRE = "sortirlebac.adresse";

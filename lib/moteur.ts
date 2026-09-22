@@ -12,10 +12,10 @@
  * mardi soir.
  */
 
-import { emprisesContenant } from "./geo";
-import { feriesSurPlage } from "./feries";
-import { ajouterJours, jourDeSemaine, parisVersInstant, semaineISO } from "./temps";
-import type { Collecte, Paquet, RegleCompacte } from "./types";
+import { emprisesContenant } from "./geo.ts";
+import { feriesSurPlage } from "./feries.ts";
+import { ajouterJours, jourDeSemaine, parisVersInstant, semaineISO } from "./temps.ts";
+import type { Collecte, Paquet, RegleCompacte } from "./types.ts";
 
 export function reglesPour(paquet: Paquet, lat: number, lon: number): RegleCompacte[] {
   const emprises = emprisesContenant(lat, lon, paquet.emprises);

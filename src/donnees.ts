@@ -1,4 +1,4 @@
-import type { Paquet } from "../lib/types";
+import type { Paquet } from "../lib/types.ts";
 
 let enCours: Promise<Paquet> | null = null;
 

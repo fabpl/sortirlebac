@@ -11,9 +11,9 @@ import { describe, expect, it } from "vitest";
 
 import donnees from "../public/secteurs.json";
 import reference from "../data/reference-dates.json";
-import { collectesPourRegles } from "../lib/moteur";
-import { parisVersInstant, semaineISO } from "../lib/temps";
-import type { Paquet, RegleCompacte } from "../lib/types";
+import { collectesPourRegles } from "../lib/moteur.ts";
+import { parisVersInstant, semaineISO } from "../lib/temps.ts";
+import type { Paquet, RegleCompacte } from "../lib/types.ts";
 
 const paquet = donnees as unknown as Paquet;
 const datesPubliees = reference as { s: number; t: string; j: string }[];

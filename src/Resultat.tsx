@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 
-import { genererIcs } from "../lib/ics";
-import type { Collecte } from "../lib/types";
-import type { Adresse } from "./geocodage";
+import { genererIcs } from "../lib/ics.ts";
+import type { Collecte } from "../lib/types.ts";
+import type { Adresse } from "./geocodage.ts";
 
 const dateLongue = new Intl.DateTimeFormat("fr-FR", {
   weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris",

@@ -80,6 +80,14 @@ fenêtre publiée par l'Agglo à partir des seules règles de secteur :
 Une action hebdomadaire rejoue les deux et n'intègre les nouvelles données que
 si elles passent ; sinon elle ouvre une issue.
 
+**Et la fonction se charge vraiment.** Vitest transforme les imports, donc un
+module parfaitement vert en test peut exploser en production : le premier
+déploiement est tombé en `FUNCTION_INVOCATION_FAILED` avec 23 tests au vert,
+sur un import JSON auquel il manquait `with { type: "json" }`, puis sur des
+imports relatifs sans extension. `npm run smoke` charge la fonction sous le
+vrai Node, en ESM, et l'invoque — c'est le seul contrôle qui voit cette
+classe de bug.
+
 ## Développer
 
 ```bash
@@ -96,6 +104,7 @@ npm test
 | `api/calendrier.ts` | fonction serverless, exposée sur `/calendrier.ics` |
 | `scripts/build-data.mjs` | téléchargement, compactage, contrôle par adresses |
 | `tests/` | validation contre le portail, conformité RFC 5545, API |
+| `scripts/smoke-api.mjs` | charge la fonction sous le vrai Node (voir ci-dessous) |
 | `contrib/` | source Home Assistant (Python) |
 
 ## Déploiement

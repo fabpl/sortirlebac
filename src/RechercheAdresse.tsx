@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 
-import { chercherAdresse, type Adresse } from "./geocodage";
+import { chercherAdresse, type Adresse } from "./geocodage.ts";
 
 interface Props {
   onChoix: (adresse: Adresse) => void;

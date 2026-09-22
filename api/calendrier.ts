@@ -10,11 +10,16 @@
  * disponibilité du portail au moment où un agenda se rafraîchit.
  */
 
-import paquetBrut from "../public/secteurs.json";
-import { genererIcs, RAPPEL_PAR_DEFAUT } from "../lib/ics";
-import { collectes } from "../lib/moteur";
-import { ajouterJours, aujourdhuiAParis } from "../lib/temps";
-import type { Paquet } from "../lib/types";
+// L'attribut `with { type: "json" }` n'est pas décoratif : le paquet est en
+// `"type": "module"`, donc Node exécute cette fonction en ESM et refuse un
+// import JSON sans lui (ERR_IMPORT_ATTRIBUTE_MISSING). Vitest transforme les
+// imports et ne voit pas la différence — d'où scripts/smoke-api.mjs, qui
+// charge la fonction sous le vrai Node.
+import paquetBrut from "../public/secteurs.json" with { type: "json" };
+import { genererIcs, RAPPEL_PAR_DEFAUT } from "../lib/ics.ts";
+import { collectes } from "../lib/moteur.ts";
+import { ajouterJours, aujourdhuiAParis } from "../lib/temps.ts";
+import type { Paquet } from "../lib/types.ts";
 
 const paquet = paquetBrut as unknown as Paquet;
 
@@ -23,17 +28,23 @@ const HORIZON_MAX = 400;
 // de cache CDN suffit largement et évite de réveiller la fonction pour rien.
 const CACHE = "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400";
 
+/**
+ * `Number(null)` vaut 0, pas NaN. Un paramètre absent doit donc être écarté
+ * AVANT toute conversion, sinon il prend silencieusement la valeur 0 : un
+ * `jours` manquant donnait un horizon d'un jour, et un `rappel` manquant
+ * supprimait les alarmes — sur l'URL d'abonnement que l'application génère,
+ * justement, sans ces deux paramètres.
+ */
 function nombre(valeur: string | null, defaut: number, mini: number, maxi: number) {
+  if (valeur === null || valeur.trim() === "") return defaut;
   const lu = Number(valeur);
   if (!Number.isFinite(lu)) return defaut;
   return Math.min(maxi, Math.max(mini, Math.trunc(lu)));
 }
 
-/**
- * `Number(null)` vaut 0, pas NaN : sans ce garde-fou, une requête sans
- * coordonnées serait interprétée comme le point (0, 0) au large du golfe de
- * Guinée, et répondrait « aucun secteur » au lieu de « paramètre manquant ».
- */
+/** Même piège, appliqué aux coordonnées : sans ce garde-fou, une requête sans
+ * `lat`/`lon` viserait le point (0, 0) au large du golfe de Guinée et
+ * répondrait « aucun secteur » au lieu de « paramètre manquant ». */
 function coordonnee(valeur: string | null, amplitude: number): number | null {
   if (valeur === null || valeur.trim() === "") return null;
   const lu = Number(valeur);

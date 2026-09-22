@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { GET } from "../api/calendrier";
+import { GET } from "../api/calendrier.ts";
 
 const appeler = (requete: string) =>
   GET(new Request(`https://sortirlebac.vercel.app/calendrier.ics?${requete}`));
@@ -32,6 +32,22 @@ describe("GET /calendrier.ics", () => {
 
   it("répond 404 hors du territoire de l'Agglo", () => {
     expect(appeler("lat=48.8566&lon=2.3522").status).toBe(404); // Paris
+  });
+
+  it("applique l'horizon complet quand `jours` est absent", async () => {
+    // L'URL d'abonnement produite par l'application ne passe ni `jours` ni
+    // `rappel` : ces deux défauts sont le cas nominal, pas un cas limite.
+    const defaut = await appeler("lat=46.16295&lon=-1.15359").text();
+    const explicite = await appeler("lat=46.16295&lon=-1.15359&jours=400").text();
+    const evenements = (texte: string) => texte.split("BEGIN:VEVENT").length - 1;
+
+    expect(evenements(defaut)).toBe(evenements(explicite));
+    expect(evenements(defaut)).toBeGreaterThan(50);
+  });
+
+  it("pose un rappel par défaut quand `rappel` est absent", async () => {
+    expect(await appeler("lat=46.16295&lon=-1.15359").text())
+      .toContain("BEGIN:VALARM");
   });
 
   it("borne l'horizon demandé", async () => {

@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
-import { Application } from "./Application";
+import { Application } from "./Application.tsx";
 import "./styles.css";
 
 createRoot(document.getElementById("racine")!).render(
